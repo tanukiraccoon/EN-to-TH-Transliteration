@@ -1,13 +1,6 @@
-language: python
-
 services:
   - docker
 
 before_install:
   - docker build -t tanukiraccoon/en-to-th-transliteration .
-  - docker run -d -p 5000:5000 tanukiraccoon/en-to-th-transliteration /bin/sh -c "cd /root/en-to-th-transliteration; bundle exec foreman start;"
-  - docker ps -a
-  - docker run tanukiraccoon/en-to-th-transliteration /bin/sh -c "cd /root/en-to-th-transliteration; bundle exec rake test"
-
-script:
-  - bundle exec rake test
+  - docker run -d -p 5000:5000 tanukiraccoon/en-to-th-transliteration

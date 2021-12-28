@@ -1,4 +1,4 @@
-# EN-to-TH-Transliteration [![Build Status](https://app.travis-ci.com/tanukiraccoon/EN-to-TH-Transliteration.svg?branch=main)](https://app.travis-ci.com/tanukiraccoon/EN-to-TH-Transliteration)
+# EN-to-TH-Transliteration [![Build Status](https://app.travis-ci.com/tanukiraccoon/EN-to-TH-Transliteration.svg?branch=main)](https://app.travis-ci.com/tanukiraccoon/EN-to-TH-Transliteration) [![Docker Image CI](https://github.com/tanukiraccoon/EN-to-TH-Transliteration/actions/workflows/docker-image.yml/badge.svg)](https://github.com/tanukiraccoon/EN-to-TH-Transliteration/actions/workflows/docker-image.yml)
 This is my final project in university.
 ## Installation
 Install with [docker](https://www.docker.com/):

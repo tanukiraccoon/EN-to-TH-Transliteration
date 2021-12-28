@@ -1,28 +1,19 @@
 from __future__ import print_function
-import os
 
+from keras.models import Model, load_model
+from keras.layers import Input
 import numpy as np
-from tensorflow.python.keras.engine.input_layer import Input
-from tensorflow.python.keras.engine.training import Model
-from tensorflow.python.keras.saving.save import load_model
 
 batch_size = 64  # Batch size for training.
 epochs = 100  # Number of epochs to train for.
 latent_dim = 256  # Latent dimensionality of the encoding space.
 num_samples = 7110  # Number of samples to train on.
 # Path to the data txt file on disk.
+data_path =  r'data/data.txt'
 
-APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(APP_ROOT, "./data/data.txt")
-
-model_path = os.path.join(APP_ROOT, "./model/model.h5")
-# data_path = r"data\data.txt"
-
-
-def str2lst(string):
+def str2lst(string): 
     li = list(string.split(" "))
-    return li
-
+    return li 
 
 # Vectorize the data.  We use the same approach as the training script.
 # NOTE: the data must be identical, in order for the character -> integer
@@ -32,12 +23,12 @@ input_texts = []
 target_texts = []
 input_characters = set()
 target_characters = set()
-with open(data_path, "r", encoding="utf-8") as f:
-    lines = f.read().split("\n")
+with open(data_path, 'r', encoding='utf-8') as f:
+    lines = f.read().split('\n')
 for line in lines[: min(num_samples, len(lines))]:
-    input_text, target_text = line.split("\t")
-    target_text = "<SOS> " + target_text + " <EOS>"
-
+    input_text, target_text = line.split('\t')
+    target_text = '<SOS> ' + target_text  + ' <EOS>'
+    
     input_text = str2lst(input_text)
     target_text = str2lst(target_text)
 
@@ -58,41 +49,48 @@ num_decoder_tokens = len(target_characters)
 max_encoder_seq_length = max([len(txt) for txt in input_texts])
 max_decoder_seq_length = max([len(txt) for txt in target_texts])
 
-input_token_index = dict([(char, i) for i, char in enumerate(input_characters)])
-target_token_index = dict([(char, i) for i, char in enumerate(target_characters)])
+input_token_index = dict(
+    [(char, i) for i, char in enumerate(input_characters)])
+target_token_index = dict(
+    [(char, i) for i, char in enumerate(target_characters)])
 
-# One-Hot Representation
-encoder_input_data = np.zeros((len(input_texts), max_encoder_seq_length, num_encoder_tokens), dtype="float32")
+#One-Hot Representation
+encoder_input_data = np.zeros(
+    (len(input_texts), max_encoder_seq_length, num_encoder_tokens),
+    dtype='float32')
 
 for i, input_text in enumerate(input_texts):
     for t, char in enumerate(input_text):
-        encoder_input_data[i, t, input_token_index[char]] = 1.0
+        encoder_input_data[i, t, input_token_index[char]] = 1.
 
         # Restore the model and construct the encoder and decoder.
+model = load_model(r'model/model.h5')
 
-
-model = load_model(model_path)
-
-encoder_inputs = model.input[0]  # input_1
-encoder_outputs, state_h_enc, state_c_enc = model.layers[2].output  # lstm_1
+encoder_inputs = model.input[0]   # input_1
+encoder_outputs, state_h_enc, state_c_enc = model.layers[2].output   # lstm_1
 encoder_states = [state_h_enc, state_c_enc]
 encoder_model = Model(encoder_inputs, encoder_states)
 
-decoder_inputs = model.input[1]  # input_2
-decoder_state_input_h = Input(shape=(latent_dim,), name="input_3")
-decoder_state_input_c = Input(shape=(latent_dim,), name="input_4")
+decoder_inputs = model.input[1]   # input_2
+decoder_state_input_h = Input(shape=(latent_dim,), name='input_3')
+decoder_state_input_c = Input(shape=(latent_dim,), name='input_4')
 decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
 decoder_lstm = model.layers[3]
-decoder_outputs, state_h_dec, state_c_dec = decoder_lstm(decoder_inputs, initial_state=decoder_states_inputs)
+decoder_outputs, state_h_dec, state_c_dec = decoder_lstm(
+    decoder_inputs, initial_state=decoder_states_inputs)
 decoder_states = [state_h_dec, state_c_dec]
 decoder_dense = model.layers[4]
 decoder_outputs = decoder_dense(decoder_outputs)
-decoder_model = Model([decoder_inputs] + decoder_states_inputs, [decoder_outputs] + decoder_states)
+decoder_model = Model(
+    [decoder_inputs] + decoder_states_inputs,
+    [decoder_outputs] + decoder_states)
 
 # Reverse-lookup token index to decode sequences back to
 # something readable.
-reverse_input_char_index = dict((i, char) for char, i in input_token_index.items())
-reverse_target_char_index = dict((i, char) for char, i in target_token_index.items())
+reverse_input_char_index = dict(
+    (i, char) for char, i in input_token_index.items())
+reverse_target_char_index = dict(
+    (i, char) for char, i in target_token_index.items())
 
 # Decodes an input sequence.  Future work should support beam search.
 def decode_sequence(input_seq):
@@ -102,14 +100,15 @@ def decode_sequence(input_seq):
     # Generate empty target sequence of length 1.
     target_seq = np.zeros((1, 1, num_decoder_tokens))
     # Populate the first character of target sequence with the start character.
-    target_seq[0, 0, target_token_index["<SOS>"]] = 1.0
+    target_seq[0, 0, target_token_index['<SOS>']] = 1.
 
     # Sampling loop for a batch of sequences
     # (to simplify, here we assume a batch of size 1).
     stop_condition = False
     decoded_sentence = []
     while not stop_condition:
-        output_tokens, h, c = decoder_model.predict([target_seq] + states_value)
+        output_tokens, h, c = decoder_model.predict(
+            [target_seq] + states_value)
 
         # Sample a token
         sampled_token_index = np.argmax(output_tokens[0, -1, :])
@@ -119,32 +118,31 @@ def decode_sequence(input_seq):
 
         # Exit condition: either hit max length
         # or find stop character.
-        if sampled_char == "<EOS>" or len(decoded_sentence) > max_decoder_seq_length:
+        if (sampled_char == '<EOS>' or
+           len(decoded_sentence) > max_decoder_seq_length):
             stop_condition = True
 
         # Update the target sequence (of length 1).
         target_seq = np.zeros((1, 1, num_decoder_tokens))
-        target_seq[0, 0, sampled_token_index] = 1.0
+        target_seq[0, 0, sampled_token_index] = 1.
 
         # Update states
         states_value = [h, c]
     return decoded_sentence
 
-
 def encode_input(name):
-    test_input = np.zeros((1, max_encoder_seq_length, num_encoder_tokens), dtype="float32")
-
+    test_input = np.zeros(
+        (1, max_encoder_seq_length, num_encoder_tokens),
+        dtype='float32')
+    
     for t, char in enumerate(name):
-        test_input[0, t, input_token_index[char]] = 1.0
+        test_input[0, t, input_token_index[char]] = 1.
     return test_input
 
-
 from word_alignment import alignment_en as en
-
-
 def use_model(text):
-    if text.find(",") > -1:
-        text = list(text.split(","))
+    if text.find(',') > -1 :
+        text = list(text.split(',')) 
     else:
         text = en(text)
     print(text)

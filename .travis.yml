@@ -6,6 +6,6 @@ python:
 services:
   - docker
 
-before_install:
+script:
   - docker build -t tanukiraccoon/en-to-th-transliteration .
   - docker run -d -p 5000:5000 tanukiraccoon/en-to-th-transliteration
